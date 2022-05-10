@@ -1,6 +1,6 @@
 """An example of training DSQL against OpenAI Gym Envs.
 Folked from https://github.com/pfnet/pfrl/blob/master/examples/gym/train_dqn_gym.py
-Both discrete and continuous action spaces are supported.
+Only discrete action spaces are supported.
 To solve CartPole-v0, run:
     python train_sql.py --env CartPole-v0
 """
@@ -119,34 +119,21 @@ def main():
     obs_size = obs_space.low.size
     action_space = env.action_space
 
-    if isinstance(action_space, spaces.Box):
-        action_size = action_space.low.size
-        # Use NAF to apply DQN to continuous action spaces
-        q_func = q_functions.FCQuadraticStateQFunction(
-            obs_size,
-            action_size,
-            n_hidden_channels=args.n_hidden_channels,
-            n_hidden_layers=args.n_hidden_layers,
-            action_space=action_space,
-        )
-        # Use the Ornstein-Uhlenbeck process for exploration
-        ou_sigma = (action_space.high - action_space.low) * 0.2
-        explorer = explorers.AdditiveOU(sigma=ou_sigma)
-    else:
-        n_actions = action_space.n
-        q_func = q_functions.FCStateQFunctionWithDiscreteAction(
-            obs_size,
-            n_actions,
-            n_hidden_channels=args.n_hidden_channels,
-            n_hidden_layers=args.n_hidden_layers,
-        )
-        # Use epsilon-greedy for exploration
-        explorer = explorers.LinearDecayEpsilonGreedy(
-            args.start_epsilon,
-            args.end_epsilon,
-            args.final_exploration_steps,
-            action_space.sample,
-        )
+
+    n_actions = action_space.n
+    q_func = q_functions.FCStateQFunctionWithDiscreteAction(
+        obs_size,
+        n_actions,
+        n_hidden_channels=args.n_hidden_channels,
+        n_hidden_layers=args.n_hidden_layers,
+    )
+    # Use epsilon-greedy for exploration
+    explorer = explorers.LinearDecayEpsilonGreedy(
+        args.start_epsilon,
+        args.end_epsilon,
+        args.final_exploration_steps,
+        action_space.sample,
+    )
 
     if args.noisy_net_sigma is not None:
         pnn.to_factorized_noisy(q_func, sigma_scale=args.noisy_net_sigma)
